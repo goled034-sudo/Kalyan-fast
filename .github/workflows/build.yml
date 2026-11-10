@@ -33,6 +33,16 @@ jobs:
           PUB_DIR=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
           echo "Found pubspec in: $PUB_DIR"
           cd "$PUB_DIR"
+          
+          # Check if main.dart exists, if not find it
+          if [ ! -f "lib/main.dart" ]; then
+            MAIN_FILE=$(find . -name "main.dart" | head -n 1)
+            if [ -n "$MAIN_FILE" ]; then
+              MAIN_DIR=$(dirname "$(dirname "$MAIN_FILE")")
+              cd "$MAIN_DIR"
+            fi
+          fi
+          
           flutter pub get
           flutter build apk --release
 
