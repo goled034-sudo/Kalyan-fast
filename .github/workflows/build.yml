@@ -23,25 +23,29 @@ jobs:
           flutter-version: '3.29.0'
           channel: 'stable'
 
-      - name: Unzip project
+      - name: Unzip and Fix Structure
         run: |
-          unzip -q "kalyan fast.zip" -d extracted_folder
-          echo "=== Contents of extracted folder ==="
-          find extracted_folder -maxdepth 3 -name "pubspec.yaml"
-
-      - name: Find and Build
-        run: |
-          # Find the exact directory containing pubspec.yaml inside extracted_folder
-          PUB_PATH=$(find extracted_folder -name "pubspec.yaml" -print -quit)
-          if [ -z "$PUB_PATH" ]; then
-            echo "Error: pubspec.yaml not found!"
-            exit 1
+          mkdir -p extracted_project
+          unzip -q "kalyan fast.zip" -d extracted_project
+          
+          # If files are nested inside a subfolder, bring them to the root of extracted_project
+          if [ -d "extracted_project/Kalyan-fast" ]; then
+            cp -r extracted_project/Kalyan-fast/* extracted_project/
+          elif [ -d "extracted_project/kalyan-fast" ]; then
+            cp -r extracted_project/kalyan-fast/* extracted_project/
+          else
+            # Find any directory containing pubspec.yaml and move its contents up if needed
+            SUBDIR=$(find extracted_project -maxdepth 2 -name "pubspec.yaml" -exec dirname {} \;)
+            if [ "$SUBDIR" != "extracted_project" ] && [ -n "$SUBDIR" ]; then
+              cp -r "$SUBDIR"/* extracted_project/
+            fi
           fi
-          
-          PROJECT_DIR=$(dirname "$PUB_PATH")
-          echo "Found project directory at: $PROJECT_DIR"
-          
-          cd "$PROJECT_DIR"
+
+      - name: Build APK
+        run: |
+          cd extracted_project
+          echo "Checking files in current directory:"
+          ls -la
           flutter pub get
           flutter build apk --release
 
@@ -49,4 +53,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: "extracted_folder/**/build/app/outputs/flutter-apk/app-release.apk"
+          path: "extracted_project/build/app/outputs/flutter-apk/app-release.apk"
