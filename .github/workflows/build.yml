@@ -11,18 +11,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: List files for debugging
-        run: ls -la
-
-      - name: Unzip project
-        run: |
-          if [ -f "kalyan fast.zip" ]; then
-            unzip -q "kalyan fast.zip" -d extracted_project
-          else
-            echo "Zip file not found in root!"
-            exit 1
-          fi
-
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
@@ -35,16 +23,16 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
-      - name: Find pubspec directory
-        id: find_pubspec
+      - name: Unzip project
         run: |
-          PUB_DIR=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
-          echo "pub_dir=$PUB_DIR" >> $GITHUB_OUTPUT
-          echo "Found pubspec at: $PUB_DIR"
+          unzip -q "kalyan fast.zip" -d extracted_folder
 
-      - name: Build APK
-        working-directory: ${{ steps.find_pubspec.outputs.pub_dir }}
+      - name: Find and Build
         run: |
+          cd extracted_folder
+          PUB_DIR=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
+          echo "Found pubspec in: $PUB_DIR"
+          cd "$PUB_DIR"
           flutter pub get
           flutter build apk --release
 
@@ -52,4 +40,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: "**/outputs/flutter-apk/app-release.apk"
+          path: "extracted_folder/**/build/app/outputs/flutter-apk/app-release.apk"
