@@ -20,37 +20,17 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.0'
+          flutter-version: '3.16.0'
           channel: 'stable'
 
-      - name: Unzip and Fix Structure
-        run: |
-          mkdir -p extracted_project
-          unzip -q "kalyan fast.zip" -d extracted_project
-          
-          # If files are nested inside a subfolder, bring them to the root of extracted_project
-          if [ -d "extracted_project/Kalyan-fast" ]; then
-            cp -r extracted_project/Kalyan-fast/* extracted_project/
-          elif [ -d "extracted_project/kalyan-fast" ]; then
-            cp -r extracted_project/kalyan-fast/* extracted_project/
-          else
-            # Find any directory containing pubspec.yaml and move its contents up if needed
-            SUBDIR=$(find extracted_project -maxdepth 2 -name "pubspec.yaml" -exec dirname {} \;)
-            if [ "$SUBDIR" != "extracted_project" ] && [ -n "$SUBDIR" ]; then
-              cp -r "$SUBDIR"/* extracted_project/
-            fi
-          fi
+      - name: Get Flutter Packages
+        run: flutter pub get
 
       - name: Build APK
-        run: |
-          cd extracted_project
-          echo "Checking files in current directory:"
-          ls -la
-          flutter pub get
-          flutter build apk --release
+        run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: "extracted_project/build/app/outputs/flutter-apk/app-release.apk"
+          path: build/app/outputs/flutter-apk/app-release.apk
